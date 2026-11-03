@@ -1,0 +1,26 @@
+# 私钥 / 证书（绝对不能提交）
+*.pem
+*.key
+*.ppk
+*.p12
+id_rsa*
+
+# 作者本地草稿
+idea.txt
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# 临时文件
+tmp_*.js
+tmp_*.txt
+t.txt
+*.log
+node_modules/
+
+# 开发期截图存档
+shots/dev/
