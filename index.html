@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ElementsWar · 元素战争</title>
+<style>
+  :root{
+    --bg:#06090e; --panel:#0e141d;
+    --line:#1b2532; --line2:#26313f;
+    --txt:#e8eef8; --dim:#8b9ab3; --dim2:#5f6f88;
+    --teal:#3ee0c0; --amber:#ffc46b; --red:#ff5d6c; --blue:#5aa8ff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--bg);overflow:hidden;color:var(--txt);
+    font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(1100px 520px at 15% -10%, rgba(62,224,192,.10), transparent 60%),
+      radial-gradient(900px 500px at 92% 108%, rgba(255,150,80,.08), transparent 60%),
+      radial-gradient(700px 400px at 60% 50%, rgba(90,168,255,.05), transparent 70%)}
+  #app{position:relative;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;z-index:1}
+  canvas{display:block;width:min(100vw,177.78vh);height:auto;aspect-ratio:16/9;
+    background:#0a0e14;border-radius:8px;box-shadow:0 0 0 1px #151d28, 0 40px 120px rgba(0,0,0,.9);
+    cursor:none}
+  #ui{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+  #ui.hidden{display:none}
+  .scrim{position:absolute;inset:0;background:rgba(3,5,9,.82);backdrop-filter:blur(6px)}
+
+  /* ---------- 通用 ---------- */
+  .card{position:relative;z-index:2;width:min(1080px,94vw);max-height:92vh;overflow-y:auto;
+    background:linear-gradient(180deg,rgba(18,26,37,.98),rgba(11,16,24,.98));
+    border:1px solid var(--line);border-radius:18px;
+    box-shadow:0 40px 100px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.045);
+    padding:30px 34px}
+  .card.small{width:min(620px,94vw)}
+  .card::-webkit-scrollbar{width:9px}
+  .card::-webkit-scrollbar-thumb{background:#232e3d;border-radius:5px}
+
+  h1{font-size:38px;letter-spacing:3px;font-weight:800;line-height:1.1;
+    background:linear-gradient(92deg,#4df0cd,#5aa8ff 42%,#ffb066 78%,#c07bff);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  h2{font-size:12px;color:var(--dim);font-weight:700;margin:22px 0 10px;
+    letter-spacing:2px;text-transform:uppercase;display:flex;align-items:center;gap:10px}
+  h2::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+  .sub{color:var(--dim);font-size:13px;margin-top:8px;letter-spacing:.4px;line-height:1.7}
+  .hint{font-size:12px;color:var(--dim2);line-height:1.6}
+  .row{display:flex;align-items:center;gap:12px;margin-top:20px;flex-wrap:wrap}
+  .center{text-align:center}
+  .money{color:var(--amber);font-weight:700}
+
+  /* ---------- 按钮 ---------- */
+  .btn{background:linear-gradient(180deg,#1f8f7d,#136b5d);border:1px solid #2fb99f;
+    color:#e9fffa;border-radius:11px;padding:12px 26px;font-size:14px;font-weight:700;
+    cursor:pointer;font-family:inherit;transition:.16s;letter-spacing:.5px}
+  .btn:hover{filter:brightness(1.15);transform:translateY(-1px)}
+  .btn:active{transform:translateY(0)}
+  .btn:disabled{opacity:.35;cursor:not-allowed;filter:none;transform:none}
+  .btn.ghost{background:rgba(255,255,255,.035);border-color:var(--line2);color:#b9c6da}
+  .btn.ghost:hover{background:rgba(255,255,255,.07)}
+  .btn.sm{padding:8px 16px;font-size:12.5px;border-radius:9px}
+  .btn.wide{display:block;width:100%}
+
+  /* ---------- 输入 ---------- */
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{font-size:11px;color:var(--dim2);letter-spacing:1px;font-weight:700}
+  input,select{background:#0a1018;border:1px solid var(--line2);color:var(--txt);
+    border-radius:10px;padding:11px 13px;font-family:inherit;font-size:13.5px;outline:none;
+    transition:.15s;width:100%}
+  input:focus,select:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(62,224,192,.10)}
+  input::placeholder{color:#44536a}
+  select{cursor:pointer;appearance:none;
+    background-image:linear-gradient(45deg,transparent 50%,#5f6f88 50%),linear-gradient(135deg,#5f6f88 50%,transparent 50%);
+    background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;
+    background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:34px}
+
+  /* ---------- 大厅 ---------- */
+  .hall{width:min(1120px,95vw);padding:0;overflow:hidden}
+  .hall-top{display:flex;align-items:center;justify-content:space-between;
+    padding:24px 30px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,rgba(62,224,192,.05),transparent)}
+  .hall-brand{display:flex;align-items:baseline;gap:14px}
+  .hall-brand h1{font-size:30px}
+  .hall-brand .v{font-size:11px;color:var(--dim2);letter-spacing:1.5px}
+  .hall-body{display:grid;grid-template-columns:1fr 320px}
+  .hall-rooms{padding:22px 26px 26px;border-right:1px solid var(--line);min-height:400px}
+  .hall-side{padding:22px 26px 26px;background:rgba(255,255,255,.012)}
+  .hall-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .hall-head span{font-size:12px;color:var(--dim);letter-spacing:2px;font-weight:700}
+  .room-list{display:flex;flex-direction:column;gap:9px;max-height:52vh;overflow-y:auto;padding-right:4px}
+  .room-list::-webkit-scrollbar{width:7px}
+  .room-list::-webkit-scrollbar-thumb{background:#222d3c;border-radius:4px}
+  .room{display:flex;align-items:center;gap:14px;padding:13px 16px;
+    background:rgba(255,255,255,.028);border:1px solid var(--line);border-radius:12px;transition:.15s}
+  .room:hover{border-color:#2d3b4d;background:rgba(255,255,255,.05)}
+  .room .code{font:800 15px/1 Consolas,monospace;letter-spacing:2.5px;color:var(--teal);min-width:64px}
+  .room .meta{flex:1;min-width:0}
+  .room .meta .n{font-size:13px;font-weight:600;color:#dbe4f2}
+  .room .meta .m{font-size:11px;color:var(--dim2);margin-top:2px}
+  .room .cnt{font:700 13px/1 Consolas,monospace;color:#9fb0c8}
+  .room .st{font-size:11px;padding:4px 9px;border-radius:6px;letter-spacing:.5px}
+  .room .st.wait{color:#7fe8d2;background:rgba(62,224,192,.10)}
+  .room .st.play{color:#ffca7a;background:rgba(255,196,107,.10)}
+  .room .st.full{color:#ff9aa2;background:rgba(255,93,108,.10)}
+  .empty{color:var(--dim2);font-size:13px;text-align:center;padding:46px 10px;line-height:2}
+  .empty b{display:block;font-size:15px;color:var(--dim);margin-bottom:6px}
+
+  /* ---------- 房间 ---------- */
+  .lobby-grid{display:grid;grid-template-columns:1fr 300px;gap:26px;margin-top:20px}
+  .team-col{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+  .team-title{font-size:11px;letter-spacing:2px;font-weight:700;margin-bottom:6px}
+  .team-title.t0{color:#4de8cf}
+  .team-title.t1{color:#ff7f8b}
+  .pl{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:11px;
+    background:rgba(255,255,255,.03);border:1px solid var(--line);font-size:13px}
+  .pl.me{background:rgba(62,224,192,.07);border-color:rgba(62,224,192,.35)}
+  .pl .dot{width:7px;height:7px;border-radius:50%;flex:none}
+  .pl .nm{flex:1;color:#cdd8e8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pl.me .nm{color:#fff;font-weight:600}
+  .pl .tag{font-size:10px;padding:3px 7px;border-radius:5px;letter-spacing:.5px}
+  .pl .tag.host{color:#ffd08a;background:rgba(255,196,107,.13)}
+  .pl .tag.rdy{color:#7fe8d2;background:rgba(62,224,192,.12)}
+  .pl .tag.no{color:#6b7a92;background:rgba(255,255,255,.05)}
+  .pl .ping{font:600 11px/1 Consolas,monospace;color:var(--dim2);min-width:38px;text-align:right}
+  .lobby-side{display:flex;flex-direction:column;gap:10px}
+  .code-box{text-align:center;padding:18px;border-radius:14px;
+    background:linear-gradient(180deg,rgba(62,224,192,.09),rgba(62,224,192,.02));
+    border:1px solid rgba(62,224,192,.28)}
+  .code-box .lab{font-size:10px;letter-spacing:3px;color:#5e8f86}
+  .code-box .val{font:800 30px/1.3 Consolas,monospace;letter-spacing:8px;color:var(--teal);margin-top:4px}
+  .code-box .meta{font-size:11.5px;color:var(--dim);margin-top:6px}
+
+  /* ---------- 配装 / 商店 ---------- */
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+  .grid.g3{grid-template-columns:repeat(3,1fr)}
+  .opt{background:#0a1018;border:1px solid var(--line);border-radius:11px;padding:11px 13px;
+    cursor:pointer;transition:.14s;user-select:none;position:relative}
+  .opt:hover{border-color:#33455c;background:#0e1722}
+  .opt.on{border-color:var(--teal);background:rgba(62,224,192,.09);
+    box-shadow:inset 0 0 0 1px rgba(62,224,192,.18)}
+  .opt.locked{opacity:.4;cursor:not-allowed}
+  .opt.locked:hover{border-color:var(--line);background:#0a1018}
+  .opt .n{font-size:13px;font-weight:600}
+  .opt .s{font-size:11px;color:var(--dim2);margin-top:3px;line-height:1.5}
+  .opt .price{position:absolute;top:9px;right:11px;font:700 11px/1 Consolas,monospace;color:var(--amber)}
+
+  /* ---------- 设置 ---------- */
+  .setRow{display:flex;align-items:center;justify-content:space-between;
+    padding:11px 0;border-bottom:1px solid rgba(38,49,63,.6);font-size:13.5px}
+  .setRow .lab{color:#c3cee0}
+  .segs{display:flex;gap:6px}
+  .seg{padding:6px 13px;font-size:12px;background:#0a1018;border:1px solid var(--line2);
+    border-radius:8px;cursor:pointer;color:#9fadc4;font-family:inherit;transition:.14s}
+  .seg:hover{border-color:#3a4a60}
+  .seg.on{background:rgba(62,224,192,.10);border-color:var(--teal);color:#8fe8d8}
+  .keybtn{min-width:92px;padding:6px 11px;background:#0a1018;border:1px solid var(--line2);
+    border-radius:8px;color:var(--amber);font-family:inherit;font-size:12px;cursor:pointer}
+  .keybtn.wait{border-color:var(--amber);color:#fff}
+
+  /* ---------- 结算 ---------- */
+  #endTitle{font-size:56px;font-weight:800;text-align:center;margin:10px 0;letter-spacing:6px}
+  #endScore{text-align:center;color:var(--dim);font-size:15px;margin-bottom:26px;letter-spacing:1px}
+
+  /* ---------- 杂项 ---------- */
+  .logline{font-size:12.5px;color:#9fadc4;padding:5px 0 5px 16px;position:relative;line-height:1.7}
+  .logline::before{content:'';position:absolute;left:3px;top:13px;width:4px;height:4px;
+    border-radius:50%;background:var(--teal)}
+  .ttl{font-size:15px;font-weight:700;color:#8fe3d4;margin:16px 0 6px}
+  #wdesc{margin-top:11px;padding:14px 16px;background:#080d14;border:1px solid var(--line);
+    border-radius:11px;font-size:12.5px;line-height:1.85;color:#9fadc4;min-height:80px}
+  #wdesc b{color:#e8eef8}
+  #wdesc .stat{color:var(--amber);font-weight:600}
+  .mode-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:22px}
+  .mode-grid button{background:#0a1018;border:1px solid var(--line);border-radius:13px;
+    color:#dfe7f5;padding:20px 8px;font-size:19px;font-weight:700;cursor:pointer;
+    font-family:inherit;transition:.16s;line-height:1.5}
+  .mode-grid button span{display:block;font-size:11px;font-weight:400;color:var(--dim2);margin-top:6px}
+  .mode-grid button:hover{border-color:var(--teal);background:rgba(62,224,192,.06);transform:translateY(-2px)}
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="game"></canvas>
+  <div id="ui">
+    <div class="scrim"></div>
+
+    <div id="menu" class="card" style="display:none">
+      <h1>ElementsWar</h1>
+      <p class="sub">元素战争 · v<span id="ver">0.12.0</span> · 水 / 火 / 电 / 土</p>
+      <div class="mode-grid">
+        <button data-mode="small">1v1<span>小型地图 · 15 人头</span></button>
+        <button data-mode="tian">1v1<span>田字地图 · 15 人头</span></button>
+        <button data-mode="medium">3v3<span>中型地图 · 40 人头</span></button>
+        <button data-mode="large">5v5<span>大型地图 · 100 人头</span></button>
+        <button data-mode="range">靶场<span>测试武器与人机</span></button>
+      </div>
+      <div class="row">
+        <button id="btnNet" class="btn">联机对战</button>
+        <button id="btnSettings" class="btn ghost sm">设置</button>
+        <button id="btnEditor" class="btn ghost sm">地图编辑器</button>
+        <button id="btnChangelog" class="btn ghost sm">更新日志</button>
+      </div>
+    </div>
+
+    <div id="netpanel" class="card hall" style="display:none">
+      <div class="hall-top">
+        <div class="hall-brand">
+          <h1>ElementsWar</h1>
+          <span class="v">v<span id="ver2">0.12.0</span></span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button id="netRefresh" class="btn ghost sm">刷新</button>
+          <button id="btnHallSettings" class="btn ghost sm">设置</button>
+        </div>
+      </div>
+      <div class="hall-body">
+        <div class="hall-rooms">
+          <div class="hall-head"><span>房间列表</span>
+            <span id="roomCount" class="hint">—</span></div>
+          <div id="roomList" class="room-list"></div>
+        </div>
+        <div class="hall-side">
+          <div class="hall-head"><span>创建 / 加入</span></div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div class="field"><label>昵称</label>
+              <input id="netName" value="玩家" maxlength="10" placeholder="输入昵称"></div>
+            <div class="field"><label>房间号（留空则新建）</label>
+              <input id="netRoom" maxlength="4" placeholder="如 AB12"
+                style="text-transform:uppercase;letter-spacing:2px;font-family:Consolas,monospace"></div>
+            <div class="field"><label>模式</label>
+              <select id="netMode">
+                <option value="small">1v1 · 小型地图</option>
+                <option value="tian">1v1 · 田字地图</option>
+                <option value="medium">3v3 · 中型地图</option>
+                <option value="large">5v5 · 大型地图</option>
+              </select></div>
+            <button id="netGo" class="btn wide" style="margin-top:4px">进入 / 创建房间</button>
+          </div>
+          <p class="hint" style="margin-top:18px">
+            房间号相同的玩家会进入同一局。<br>
+            房主在全员准备后可以开始，空位由 AI 补上。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div id="lobby" class="card" style="display:none;width:min(880px,94vw)">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <h1 style="font-size:26px">准备中</h1>
+          <p class="sub" id="lobbySub">等待玩家准备…</p>
+        </div>
+        <div class="code-box" style="min-width:200px">
+          <div class="lab">房间号</div>
+          <div class="val" id="lobbyCode">----</div>
+        </div>
+      </div>
+      <div class="lobby-grid">
+        <div id="lobbyList"></div>
+        <div class="lobby-side">
+          <button id="lobbyReady" class="btn wide">准备</button>
+          <button id="lobbyStart" class="btn wide" disabled>开始游戏</button>
+          <button id="lobbyLeave" class="btn ghost wide">离开房间</button>
+          <p class="hint" style="margin-top:6px">房主才能开始游戏；空位会由 AI 补上。</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="loadout" class="card" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <h1 style="font-size:26px">配装</h1>
+        <span class="money">资金 <b id="loMoney">0</b></span>
+      </div>
+      <h2>主武器</h2>
+      <div id="weapons" class="grid"></div>
+      <div id="wdesc"></div>
+      <h2>天赋</h2>
+      <div id="talents" class="grid g3"></div>
+      <h2>防具</h2>
+      <div id="armors" class="grid g3"></div>
+      <h2>子弹元素</h2>
+      <div id="ammo" class="grid g3"></div>
+      <h2>道具</h2>
+      <div id="items" class="grid"></div>
+      <div class="row">
+        <button id="go" class="btn">应用</button>
+        <button id="back" class="btn ghost">返回</button>
+        <span id="loHint" class="hint"></span>
+      </div>
+    </div>
+
+    <div id="pause" class="card small" style="display:none">
+      <h1 style="font-size:28px">已暂停</h1>
+      <p class="sub" id="pauseSub"></p>
+      <div class="row" style="flex-direction:column;align-items:stretch;gap:9px;margin-top:24px">
+        <button id="btnResume" class="btn">继续游戏</button>
+        <button id="btnShop" class="btn ghost">天赋商店</button>
+        <button id="btnPauseSettings" class="btn ghost">设置</button>
+        <button id="btnQuit" class="btn ghost">离开对局</button>
+      </div>
+    </div>
+
+    <div id="shop" class="card small" style="display:none">
+      <h1 style="font-size:26px">天赋商店</h1>
+      <p class="sub">本局有效 · 资金 <span id="shopMoney" class="money">0</span>
+        · 枪械击杀 +300 / 元素反应击杀 +500</p>
+      <div id="shopBody" style="margin-top:16px"></div>
+      <div class="row"><button id="shopClose" class="btn">关闭</button></div>
+    </div>
+
+    <div id="settings" class="card small" style="display:none">
+      <h1 style="font-size:26px">设置</h1>
+      <div id="settingsBody"></div>
+      <div class="row">
+        <button id="setClose" class="btn">返回</button>
+        <button id="setReset" class="btn ghost sm">恢复默认</button>
+      </div>
+    </div>
+
+    <div id="end" class="card small" style="display:none">
+      <div id="endTitle">胜利</div>
+      <div id="endScore">0 : 0</div>
+      <div class="center"><button id="again" class="btn">返回大厅</button></div>
+    </div>
+  </div>
+</div>
+<script src="js/build.js"></script>
+<script src="js/core.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/net.js"></script>
+<script src="js/sfx.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

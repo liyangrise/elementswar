@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>SFX Test</title>
+<style>body{background:#0b0e14;color:#9fe;font:13px/1.6 Consolas,monospace;padding:20px}</style></head>
+<body>
+<pre id="out">running...</pre>
+<script src="../js/sfx.js"></script>
+<script>
+  var log = [];
+  function run() {
+    log.push('AudioContext support: ' + !!(window.AudioContext || window.webkitAudioContext));
+    var ok = SFX.init();
+    log.push('init -> ' + ok + '  state=' + SFX.getState());
+    if (!ok) { document.getElementById('out').textContent = log.join('\n'); return; }
+
+    var evs = [
+      { t: 'shoot', w: 'rifle', x: 100, y: 100 },
+      { t: 'shoot', w: 'shotgun', x: 100, y: 100 },
+      { t: 'shoot', w: 'sniper', x: 100, y: 100 },
+      { t: 'shoot', w: 'lmg', x: 100, y: 100 },
+      { t: 'shoot', w: 'smg', x: 100, y: 100 },
+      { t: 'shoot', w: 'dmr', x: 100, y: 100 },
+      { t: 'hit', elem: 'w', x: 120, y: 120, mine: true },
+      { t: 'hit', elem: 'f', x: 120, y: 120 },
+      { t: 'hit', elem: 'e', x: 120, y: 120 },
+      { t: 'boom', x: 200, y: 200, size: 1 },
+      { t: 'boom', x: 200, y: 200, size: 2 },
+      { t: 'vapor', x: 300, y: 300 },
+      { t: 'shock', x: 300, y: 300 },
+      { t: 'tri', x: 300, y: 300 },
+      { t: 'throw', x: 50, y: 50 },
+      { t: 'land', elem: 'w', x: 400, y: 400 },
+      { t: 'kill', x: 400, y: 400, mine: true },
+      { t: 'reload', x: 50, y: 50 },
+      { t: 'heal', x: 50, y: 50 },
+      { t: 'streak', tier: 5 }, { t: 'streak', tier: 9 },
+      { t: 'streak', tier: 13 }, { t: 'streak', tier: 20 },
+      { t: 'unknown-type' }
+    ];
+    SFX.setListener(100, 100);
+    var errs = 0;
+    evs.forEach(function (e, i) {
+      // 节流会让同类型连续事件被跳过，这里错开时间
+      try { SFX.play(e); } catch (err) { errs++; log.push('ERR ' + e.t + ': ' + err.message); }
+    });
+    SFX.ui();
+    log.push('played ' + evs.length + ' events, errors=' + errs);
+    log.push('ctx state after: ' + SFX.getState());
+    log.push(errs === 0 ? 'RESULT: PASS' : 'RESULT: FAIL');
+    document.getElementById('out').textContent = log.join('\n');
+  }
+  // 需要用户手势才能启动音频，这里用 setTimeout 争取 autoplay 策略放行
+  setTimeout(run, 100);
+  document.addEventListener('pointerdown', function () { SFX.resume(); });
+</script>
+</body>
+</html>
