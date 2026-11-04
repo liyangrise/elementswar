@@ -2,7 +2,7 @@
 (function (root) {
   'use strict';
 
-  var VERSION = '0.13.0';
+  var VERSION = '0.14.0';
 
   // ---------------- 可调参数 ----------------
   var CFG = {

@@ -413,6 +413,8 @@
     b.onclick = function () { clickSfx(); mode = b.dataset.mode; openLoadout(false); };
   });
   document.getElementById('btnSettings').onclick = function () { clickSfx(); settingsReturn = 'menu'; openSettings(); };
+  var _bc2 = document.getElementById('btnConfig');
+  if (_bc2) _bc2.onclick = function () { clickSfx(); window.open('config.html', '_blank'); };
   var _be = document.getElementById('btnEditor');
   if (_be) _be.onclick = function () { clickSfx(); window.open('editor.html', '_blank'); };
   var _bh = document.getElementById('btnChangelog');

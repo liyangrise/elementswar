@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ElementsWar · 配表工具</title>
+<style>
+  :root{
+    --bg:#06090e; --panel:#0e141d; --line:#1b2532; --line2:#26313f;
+    --txt:#e8eef8; --dim:#8b9ab3; --dim2:#5f6f88;
+    --teal:#3ee0c0; --amber:#ffc46b; --red:#ff5d6c; --blue:#5aa8ff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--bg);color:var(--txt);overflow:hidden;
+    font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;font-size:13px}
+  body::before{content:'';position:fixed;inset:0;pointer-events:none;
+    background:radial-gradient(900px 500px at 10% -10%,rgba(62,224,192,.07),transparent 60%),
+               radial-gradient(800px 400px at 95% 110%,rgba(255,150,80,.05),transparent 60%)}
+  #app{position:relative;height:100%;display:flex;flex-direction:column;z-index:1}
+
+  header{display:flex;align-items:center;gap:16px;padding:14px 22px;
+    border-bottom:1px solid var(--line);background:rgba(14,20,29,.9)}
+  h1{font-size:19px;letter-spacing:1.5px;font-weight:800;
+    background:linear-gradient(92deg,#4df0cd,#5aa8ff 60%,#ffb066);
+    -webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap}
+  .badge{font-size:11px;color:var(--dim2);border:1px solid var(--line2);
+    border-radius:6px;padding:3px 8px}
+  .dirty{color:var(--amber);border-color:rgba(255,196,107,.5);background:rgba(255,196,107,.1)}
+  .grow{flex:1}
+  input.search{background:#0a1018;border:1px solid var(--line2);color:var(--txt);
+    border-radius:8px;padding:7px 12px;font-family:inherit;font-size:12.5px;width:200px;outline:none}
+  input.search:focus{border-color:var(--teal)}
+  .btn{background:linear-gradient(180deg,#1f8f7d,#136b5d);border:1px solid #2fb99f;
+    color:#e9fffa;border-radius:9px;padding:8px 16px;font-size:12.5px;font-weight:700;
+    cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap}
+  .btn:hover{filter:brightness(1.15)}
+  .btn:disabled{opacity:.35;cursor:not-allowed;filter:none}
+  .btn.ghost{background:rgba(255,255,255,.035);border-color:var(--line2);color:#b9c6da}
+  .btn.ghost:hover{background:rgba(255,255,255,.07)}
+  .btn.sm{padding:5px 11px;font-size:11.5px;border-radius:7px}
+
+  main{flex:1;display:flex;min-height:0}
+  nav{width:172px;border-right:1px solid var(--line);padding:14px 10px;overflow-y:auto;flex:none}
+  nav button{display:flex;justify-content:space-between;align-items:center;width:100%;
+    background:none;border:none;color:#a8b6cb;font-family:inherit;font-size:12.5px;
+    padding:9px 12px;border-radius:8px;cursor:pointer;margin-bottom:3px;text-align:left}
+  nav button:hover{background:rgba(255,255,255,.05);color:#dbe4f2}
+  nav button.on{background:rgba(62,224,192,.1);color:#8fe8d8;font-weight:700}
+  nav .cnt{font-size:10.5px;color:var(--dim2)}
+  nav button.on .cnt{color:#5fbfae}
+
+  section{flex:1;overflow-y:auto;padding:18px 24px 90px}
+  section::-webkit-scrollbar,nav::-webkit-scrollbar{width:9px}
+  section::-webkit-scrollbar-thumb,nav::-webkit-scrollbar-thumb{background:#232e3d;border-radius:5px}
+
+  .gtitle{font-size:12px;letter-spacing:2px;color:var(--dim);font-weight:700;
+    margin:6px 0 12px;display:flex;align-items:center;gap:10px}
+  .gtitle::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;font-size:11px;letter-spacing:1px;color:var(--dim2);
+    font-weight:700;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+  td{padding:6px 10px;border-bottom:1px solid rgba(38,49,63,.5);vertical-align:middle}
+  tr:hover td{background:rgba(255,255,255,.02)}
+  tr.mod td{background:rgba(255,196,107,.055)}
+  tr.mod:hover td{background:rgba(255,196,107,.09)}
+  .lbl{color:#dbe4f2}
+  .key{font:11px/1.4 Consolas,monospace;color:var(--dim2)}
+  .unit{color:var(--dim2);font-size:11px;width:44px}
+  .rng{color:#44536a;font-size:10.5px;font-family:Consolas,monospace;width:88px}
+  .old{color:var(--red);font-size:10.5px;text-decoration:line-through;
+    font-family:Consolas,monospace;margin-left:6px}
+
+  input.num,select.sel{background:#0a1018;border:1px solid var(--line2);color:var(--txt);
+    border-radius:7px;padding:6px 9px;font-family:Consolas,monospace;font-size:12.5px;
+    width:104px;outline:none;transition:.12s}
+  input.num:focus,select.sel:focus{border-color:var(--teal);box-shadow:0 0 0 2px rgba(62,224,192,.12)}
+  input.num.mod{border-color:var(--amber);color:var(--amber)}
+  input.num.bad{border-color:var(--red);box-shadow:0 0 0 2px rgba(255,93,108,.15)}
+  .reset{background:none;border:none;color:#44536a;cursor:pointer;font-size:14px;
+    padding:2px 6px;line-height:1;border-radius:4px}
+  .reset:hover{color:var(--red);background:rgba(255,93,108,.1)}
+
+  footer{position:sticky;bottom:0;margin-top:20px;display:flex;align-items:center;gap:10px;
+    padding:12px 0 4px;border-top:1px solid var(--line);background:linear-gradient(180deg,transparent,var(--bg) 30%)}
+  .tip{font-size:11.5px;color:var(--dim2);line-height:1.6}
+
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:16px}
+  .card{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:11px;padding:12px 14px}
+  .card .k{font-size:11px;color:var(--dim2);letter-spacing:1px}
+  .card .v{font:700 20px/1.4 Consolas,monospace;color:var(--teal);margin-top:2px}
+  .card .s{font-size:11px;color:var(--dim2);margin-top:2px}
+
+  .bar{height:5px;border-radius:3px;background:rgba(255,255,255,.07);overflow:hidden;margin-top:6px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,#3ee0c0,#5aa8ff);border-radius:3px}
+
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
+    background:rgba(18,26,37,.98);border:1px solid var(--line2);border-radius:10px;
+    padding:10px 20px;font-size:12.5px;color:#dbe4f2;opacity:0;transition:.2s;pointer-events:none;z-index:9}
+  #toast.on{opacity:1;transform:translateX(-50%) translateY(-6px)}
+  #toast.ok{border-color:rgba(62,224,192,.5);color:#8fe8d8}
+  #toast.err{border-color:rgba(255,93,108,.5);color:#ffb3ba}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>配表工具</h1>
+    <span class="badge" id="ver">v—</span>
+    <span class="badge" id="dirtyBadge" style="display:none"></span>
+    <span class="grow"></span>
+    <input class="search" id="search" placeholder="搜索参数名 / 键名…">
+    <button class="btn ghost sm" id="btnImport">导入</button>
+    <button class="btn ghost sm" id="btnExport">导出 JSON</button>
+    <button class="btn ghost sm" id="btnResetAll">全部重置</button>
+    <button class="btn" id="btnApply">应用并试玩</button>
+  </header>
+
+  <main>
+    <nav id="nav"></nav>
+    <section id="view"></section>
+  </main>
+</div>
+<div id="toast"></div>
+
+<script>
+window.onerror = function (msg, src, line, col, err) {
+  var d = document.createElement('div');
+  d.style.cssText = 'position:fixed;left:20px;bottom:20px;z-index:99;background:#2a0d10;border:1px solid #ff5d6c;color:#ffb3ba;padding:12px 16px;border-radius:8px;font:12px Consolas,monospace;max-width:80vw;white-space:pre-wrap';
+  d.textContent = '脚本错误: ' + msg + '\n' + (err && err.stack ? err.stack : (src + ':' + line));
+  document.body.appendChild(d);
+};
+</script>
+<script src="js/core.js"></script>
+<script>
+/* ============ 参数元数据 ============ */
+var META = [
+  // 元素与区域
+  ['元素与区域','theta','反应浓度阈值',0,100,1,'','达到该浓度才判定元素存在'],
+  ['元素与区域','zoneR','手雷区域半径',40,400,5,'px',''],
+  ['元素与区域','zoneFuel','区域燃料',10,400,5,'','燃料耗尽区域消失'],
+  ['元素与区域','zoneDecay','燃料自然衰减',0,60,0.5,'/s',''],
+  ['元素与区域','reactCost','反应基础消耗',0,100,1,'','每个连通块的基础扣减'],
+  ['元素与区域','reactCoeff','反应消耗系数',0,1,0.01,'','乘以连通块面积'],
+  ['元素与区域','statusGain','区域附着速度',0,150,1,'/s','站在区域里每秒获得的附着'],
+  ['元素与区域','statusDecay','状态自然衰减',0,50,1,'/s',''],
+  ['元素与区域','statusThreshold','状态触发阈值',5,100,1,'','达到后触发燃烧/潮湿/触电'],
+  ['元素与区域','bulletStatus','子弹元素附着',0,80,1,'/发','每次命中的附着量'],
+  ['元素与区域','puddleStrength','水坑浓度',0,100,1,'','地图上永久水坑的浓度'],
+
+  // 单位与移动
+  ['单位与移动','unitHp','最大生命',40,600,10,'',''],
+  ['单位与移动','unitSpeed','移动速度',60,400,5,'px/s',''],
+  ['单位与移动','dmgMult','全局伤害倍率',0.1,5,0.05,'×','总开关，调平衡时慎用'],
+  ['单位与移动','sprintMul','疾跑倍率',1,2.5,0.05,'×',''],
+  ['单位与移动','staminaMax','体力上限',20,300,5,'',''],
+  ['单位与移动','staminaDrain','疾跑消耗',5,100,1,'/s',''],
+  ['单位与移动','staminaRegen','体力恢复',5,100,1,'/s',''],
+  ['单位与移动','respawn','复活时间',0,15,0.5,'s',''],
+  ['单位与移动','spawnProt','出生保护',0,20,0.5,'s','离开出生区立即失效'],
+
+  // 视野与迷雾
+  ['视野与迷雾','visionRange','视野距离',200,1200,10,'px',''],
+  ['视野与迷雾','visionHalfDeg','视野半角',20,120,1,'°','半角 80° = 总角 160°'],
+  ['视野与迷雾','fogDur','雾持续时间',0.5,12,0.1,'s','蒸发产生的雾'],
+  ['视野与迷雾','fogR','雾半径',30,200,5,'px',''],
+  ['视野与迷雾','rearHalfDeg','背后视野半角',20,90,1,'°','第三只眼天赋'],
+  ['视野与迷雾','rearRangeK','背后视野距离系数',0.2,1,0.05,'×',''],
+  ['视野与迷雾','eagleRange','鹰眼距离倍率',1,2.5,0.05,'×',''],
+  ['视野与迷雾','eagleAngle','鹰眼角度倍率',1,2.5,0.05,'×',''],
+  ['视野与迷雾','lagComp','延迟补偿',null,null,null,'','联机用，单机无影响'],
+  ['视野与迷雾','lagMax','最大回退时间',0,0.4,0.01,'s',''],
+  ['视野与迷雾','histLen','位置历史帧数',10,120,1,'帧',''],
+
+  // 状态与反应
+  ['状态与反应','shockStun','麻痹时长',0,2,0.02,'s','感电陷阱'],
+  ['状态与反应','shockCd','麻痹冷却',0,5,0.1,'s','防止连续麻痹'],
+  ['状态与反应','mudR','泥沼半径',40,300,10,'px','土墙周围'],
+  ['状态与反应','mudSlow','泥沼减速',0.2,1,0.05,'×','0.55 = 只保留 55% 速度'],
+  ['状态与反应','mudFire','泥沼射击惩罚',1,3,0.05,'×','开火间隔倍率'],
+
+  // 经济
+  ['经济','killMoneyGun','枪械击杀奖励',0,1000,10,'',''],
+  ['经济','killMoneyElem','元素击杀奖励',0,1500,10,'','高于枪杀 → 鼓励用元素'],
+  ['经济','weaponCost','武器基础价',0,3000,50,'',''],
+  ['经济','talentCost','天赋基础价',0,5000,50,'',''],
+
+  // 连杀
+  ['连杀','streakHeal','5连杀回血',0,1,0.05,'×','占最大生命比例'],
+  ['连杀','streakReveal','全图视野时长',0,30,0.5,'s',''],
+  ['连杀','streakPhase','穿行时长',0,20,0.5,'s','可穿墙，子弹仍被挡'],
+  ['连杀','streakBombR','空袭半径',50,500,10,'px',''],
+  ['连杀','streakBombDmg','空袭伤害',0,500,10,'',''],
+  ['连杀','winStreak','无畏战士连杀数',5,50,1,'杀',''],
+  ['连杀','fearDur','无畏持续',0,40,0.5,'s',''],
+  ['连杀','fearShield','无畏护盾',0,2000,50,'',''],
+  ['连杀','fearRate','无畏射速倍率',1,3,0.05,'×',''],
+  ['连杀','fearReload','无畏换弹倍率',1,3,0.05,'×',''],
+  ['连杀','fearKillExtend','击杀延时',0,10,0.5,'s',''],
+
+  // 装备与护甲
+  ['装备与护甲','talentHeal','击杀回血比例',0,1,0.05,'×',''],
+  ['装备与护甲','talentRubber','橡胶子弹价格',0,6000,100,'',''],
+  ['装备与护甲','talentEagle','鹰眼视野价格',0,6000,100,'',''],
+  ['装备与护甲','talentThirdEye','第三只眼价格',0,6000,100,'',''],
+  ['装备与护甲','talentRegenArmor','再生护甲价格',0,6000,100,'',''],
+  ['装备与护甲','talentHeavyArmor','重型护甲价格',0,6000,100,'',''],
+  ['装备与护甲','regenArmorMax','再生护甲值',0,200,5,'',''],
+  ['装备与护甲','regenArmorRate','护甲再生速度',0,20,1,'/s',''],
+  ['装备与护甲','regenArmorDelay','护甲再生延迟',0,10,0.5,'s','脱战多久开始回'],
+  ['装备与护甲','heavyArmorMax','重型护甲值',0,300,5,'','不可恢复'],
+
+  // 道具与土墙
+  ['道具与土墙','itemCd','道具基础CD',1,30,0.5,'s','各元素再乘自己的系数'],
+  ['道具与土墙','earthCd','土墙CD',0,40,1,'s',''],
+  ['道具与土墙','earthHp','土墙生命',50,800,10,'',''],
+  ['道具与土墙','earthLife','土墙持续',1,30,0.2,'s',''],
+
+  // AI
+  ['AI','aiErr','AI瞄准误差',0,0.5,0.01,'rad','越大越菜'],
+  ['AI','aiReaction','AI反应时间',0,1.5,0.05,'s','发现敌人到开枪的延迟'],
+
+  // 其他
+  ['其他','barrelKnock','油桶击退',0,2000,20,'',''],
+  ['其他','barrelRespawn','油桶重生',0,60,1,'s','']
+].map(function (a) {
+  return { g: a[0], k: a[1], n: a[2], min: a[3], max: a[4], step: a[5], u: a[6], tip: a[7] };
+});
+
+var STORE = 'elementswar.balance';
+var EW = window.EW;
+var DEFAULTS = snapshot();     // 出厂值
+var SAVED = load();            // localStorage 里已保存的
+var pending = JSON.parse(JSON.stringify(SAVED));   // 当前编辑中的表
+function ensureShapes(o) {
+  ['cfg', 'weapons', 'items', 'talents', 'armors', 'maps'].forEach(function (g) {
+    if (!o[g] || typeof o[g] !== 'object') o[g] = {};
+  });
+  return o;
+}
+ensureShapes(pending);
+var currentGroup = '元素与区域';
+var keyword = '';
+
+function snapshot() {
+  var o = { cfg: {}, weapons: {}, items: {}, talents: {}, armors: {}, maps: {} };
+  for (var k in EW.CFG) o.cfg[k] = EW.CFG[k];
+  for (var w in EW.WEAPONS) {
+    o.weapons[w] = {};
+    for (var f in EW.WEAPONS[w]) {
+      if (typeof EW.WEAPONS[w][f] === 'number' || typeof EW.WEAPONS[w][f] === 'boolean') {
+        o.weapons[w][f] = EW.WEAPONS[w][f];
+      }
+    }
+  }
+  for (var i in EW.ITEMS) o.items[i] = { cd: EW.ITEMS[i].cd };
+  (EW.TALENTS || []).forEach(function (t) { o.talents[t.k] = { cost: t.cost }; });
+  (EW.ARMORS || []).forEach(function (t) { o.armors[t.k] = { cost: t.cost }; });
+  for (var m in EW.MAPS) {
+    if (EW.MAPS[m]) o.maps[m] = { killTarget: EW.MAPS[m].killTarget };
+  }
+  return o;
+}
+
+function load() {
+  try {
+    var raw = localStorage.getItem(STORE);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) { return {}; }
+}
+
+function val(group, key) {
+  var p = pending[group];
+  return p && p[key] !== undefined ? p[key] : undefined;
+}
+function setVal(group, key, v) {
+  if (!pending[group]) pending[group] = {};
+  if (v === undefined) delete pending[group][key];
+  else pending[group][key] = v;
+}
+function baseVal(group, key) {
+  var p = DEFAULTS[group];
+  return p ? p[key] : undefined;
+}
+function isModified(group, key) {
+  var v = val(group, key);
+  return v !== undefined && v !== baseVal(group, key);
+}
+function countModified() {
+  var n = 0;
+  for (var g in pending) {
+    for (var k in pending[g]) {
+      if (typeof pending[g][k] === 'object') {
+        for (var f in pending[g][k]) if (pending[g][k][f] !== baseVal(g, k)[f]) n++;
+      } else if (pending[g][k] !== baseVal(g, k)) n++;
+    }
+  }
+  return n;
+}
+
+/* ============ 渲染 ============ */
+var navEl = document.getElementById('nav');
+var viewEl = document.getElementById('view');
+
+function groups() {
+  var gs = [];
+  META.forEach(function (m) { if (gs.indexOf(m.g) < 0) gs.push(m.g); });
+  gs.push('武器');
+  gs.push('道具 / 天赋 / 防具');
+  gs.push('地图');
+  return gs;
+}
+
+function renderNav() {
+  var gs = groups();
+  navEl.innerHTML = '';
+  gs.forEach(function (g) {
+    var cnt = g === '武器' ? Object.keys(EW.WEAPONS).length
+      : g === '道具 / 天赋 / 防具' ? (Object.keys(EW.ITEMS).length + EW.TALENTS.length + EW.ARMORS.length)
+      : g === '地图' ? Object.keys(EW.MAPS).length
+      : META.filter(function (m) { return m.g === g; }).length;
+    var b = document.createElement('button');
+    b.className = g === currentGroup ? 'on' : '';
+    b.innerHTML = '<span>' + g + '</span><span class="cnt">' + cnt + '</span>';
+    b.onclick = function () { currentGroup = g; renderNav(); render(); };
+    navEl.appendChild(b);
+  });
+}
+
+function fmt(v) {
+  if (typeof v === 'boolean') return v ? '开' : '关';
+  if (typeof v !== 'number') return String(v);
+  return Math.abs(v) >= 100 ? v.toFixed(0) : (Math.abs(v) >= 10 ? v.toFixed(1).replace(/\.0$/, '') : String(v));
+}
+
+function render() {
+  viewEl.innerHTML = '';
+  if (keyword) return renderSearch();
+  if (currentGroup === '武器') return renderWeapons();
+  if (currentGroup === '道具 / 天赋 / 防具') return renderItems();
+  if (currentGroup === '地图') return renderMaps();
+  renderCFG(currentGroup);
+}
+
+function rowFor(m) {
+  var tr = document.createElement('tr');
+  var cur = val('cfg', m.k);
+  if (cur === undefined) cur = baseVal('cfg', m.k);
+  var modified = isModified('cfg', m.k);
+
+  var td0 = document.createElement('td');
+  td0.innerHTML = '<div class="lbl">' + m.n + '</div><div class="key">' + m.k + '</div>';
+  tr.appendChild(td0);
+
+  var td1 = document.createElement('td');
+  if (typeof baseVal('cfg', m.k) === 'boolean') {
+    var sel = document.createElement('select');
+    sel.className = 'sel';
+    sel.innerHTML = '<option value="true">开启</option><option value="false">关闭</option>';
+    sel.value = String(!!cur);
+    sel.onchange = function () {
+      setVal('cfg', m.k, sel.value === 'true');
+      render(); updateDirty();
+    };
+    td1.appendChild(sel);
+  } else {
+    var inp = document.createElement('input');
+    inp.className = 'num' + (modified ? ' mod' : '');
+    inp.type = 'number';
+    inp.step = m.step || 1;
+    inp.value = cur;
+    inp.oninput = function () {
+      var v = parseFloat(inp.value);
+      if (!isFinite(v)) { inp.classList.add('bad'); return; }
+      inp.classList.remove('bad');
+      var bad = (m.min !== null && v < m.min) || (m.max !== null && v > m.max);
+      if (bad) inp.classList.add('bad');
+      var base = baseVal('cfg', m.k);
+      if (v === base) setVal('cfg', m.k, undefined); else setVal('cfg', m.k, v);
+      inp.classList.toggle('mod', v !== base);
+      tr.classList.toggle('mod', v !== base);
+      updateDirty();
+    };
+    td1.appendChild(inp);
+    if (modified) {
+      var s = document.createElement('span');
+      s.className = 'old';
+      s.textContent = fmt(baseVal('cfg', m.k));
+      td1.appendChild(s);
+    }
+  }
+  tr.appendChild(td1);
+
+  var td2 = document.createElement('td');
+  td2.className = 'unit';
+  td2.textContent = m.u || '';
+  tr.appendChild(td2);
+
+  var td3 = document.createElement('td');
+  td3.className = 'rng';
+  td3.textContent = m.min === null ? '' : (m.min + ' ~ ' + m.max);
+  tr.appendChild(td3);
+
+  var td4 = document.createElement('td');
+  td4.className = 'key';
+  td4.style.maxWidth = '260px';
+  td4.textContent = m.tip || '';
+  tr.appendChild(td4);
+
+  var td5 = document.createElement('td');
+  if (modified) {
+    var rb = document.createElement('button');
+    rb.className = 'reset';
+    rb.textContent = '↺';
+    rb.title = '恢复默认';
+    rb.onclick = function () {
+      setVal('cfg', m.k, undefined);
+      render(); updateDirty();
+    };
+    td5.appendChild(rb);
+  }
+  tr.appendChild(td5);
+  return tr;
+}
+
+function renderCFG(group) {
+  var t = document.createElement('div');
+  t.className = 'gtitle';
+  t.textContent = group;
+  viewEl.appendChild(t);
+
+  var table = document.createElement('table');
+  table.innerHTML = '<tr><th>参数</th><th>数值</th><th>单位</th><th>范围</th><th>说明</th><th></th></tr>';
+  META.filter(function (m) { return m.g === group; }).forEach(function (m) {
+    table.appendChild(rowFor(m));
+  });
+  viewEl.appendChild(table);
+  viewEl.appendChild(footerEl());
+}
+
+function renderSearch() {
+  var hits = META.filter(function (m) {
+    return (m.n + m.k + (m.tip || '')).toLowerCase().indexOf(keyword) >= 0;
+  });
+  var t = document.createElement('div');
+  t.className = 'gtitle';
+  t.textContent = '搜索「' + keyword + '」 共 ' + hits.length + ' 项';
+  viewEl.appendChild(t);
+  if (!hits.length) {
+    viewEl.innerHTML += '<p class="tip">没有匹配的参数。</p>';
+    return;
+  }
+  var table = document.createElement('table');
+  table.innerHTML = '<tr><th>参数</th><th>数值</th><th>单位</th><th>范围</th><th>说明</th><th></th></tr>';
+  hits.forEach(function (m) {
+    var tr = rowFor(m);
+    var first = tr.firstChild;
+    first.innerHTML = '<div class="lbl">' + m.n + '</div><div class="key">' + m.g + ' · ' + m.k + '</div>';
+    table.appendChild(tr);
+  });
+  viewEl.appendChild(table);
+}
+
+function renderWeapons() {
+  var hp = (val('cfg', 'unitHp') !== undefined ? val('cfg', 'unitHp') : EW.CFG.unitHp);
+
+  var t = document.createElement('div');
+  t.className = 'gtitle';
+  t.textContent = '武器（基于最大生命 ' + hp + ' 计算 TTK）';
+  viewEl.appendChild(t);
+
+  var table = document.createElement('table');
+  table.innerHTML = '<tr><th>武器</th><th>单发</th><th>射速</th><th>弹匣</th><th>换弹</th>' +
+    '<th>散布</th><th>弹速</th><th>价格</th><th>DPS</th><th>击杀需</th><th>TTK</th></tr>';
+
+  var rows = [];
+  Object.keys(EW.WEAPONS).forEach(function (k) {
+    var w = EW.WEAPONS[k];
+    var pw = pending.weapons[k] || {};
+    function get(f) { return pw[f] !== undefined ? pw[f] : w[f]; }
+    var dmg = get('dmg'), rpm = get('rpm'), mag = get('mag'), rel = get('reload');
+    var pel = get('pellets') || 1, cost = get('cost');
+    var perShot = dmg * pel;
+    var dps = perShot * rpm / 60;
+    var shots = Math.max(1, Math.ceil(hp / perShot));
+    var ttk = (shots - 1) * 60 / rpm;
+    rows.push({ k: k, w: w, get: get, dps: dps, shots: shots, ttk: ttk });
+
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td><div class="lbl">' + w.name + '</div><div class="key">' + k + '</div></td>';
+
+    [['dmg', '伤害'], ['rpm', '射速'], ['mag', '弹匣'], ['reload', '换弹'], ['spread', '散布'], ['speed', '弹速'], ['cost', '价格']].forEach(function (pair) {
+      var td = document.createElement('td');
+      var inp = document.createElement('input');
+      inp.className = 'num' + (pw[pair[0]] !== undefined && pw[pair[0]] !== w[pair[0]] ? ' mod' : '');
+      inp.type = 'number';
+      inp.step = pair[0] === 'reload' || pair[0] === 'spread' ? 0.01 : 1;
+      inp.value = get(pair[0]);
+      inp.style.width = '72px';
+      inp.oninput = function () {
+        var v = parseFloat(inp.value);
+        if (!isFinite(v)) return;
+        if (!pending.weapons[k]) pending.weapons[k] = {};
+        if (v === w[pair[0]]) delete pending.weapons[k][pair[0]];
+        else pending.weapons[k][pair[0]] = v;
+        inp.classList.toggle('mod', v !== w[pair[0]]);
+        tr.classList.toggle('mod', Object.keys(pending.weapons[k] || {}).length > 0);
+        updateDirty();
+        refreshDerived();
+      };
+      td.appendChild(inp);
+      tr.appendChild(td);
+    });
+
+    ['dps', 'shots', 'ttk'].forEach(function (f) {
+      var tdc = document.createElement('td');
+      tdc.className = 'key';
+      tdc.setAttribute('data-' + f, k);
+      tr.appendChild(tdc);
+    });
+    table.appendChild(tr);
+  });
+  viewEl.appendChild(table);
+
+  // 平衡摘要
+  var maxDps = Math.max.apply(null, rows.map(function (r) { return r.dps; }));
+  var minDps = Math.min.apply(null, rows.map(function (r) { return r.dps; }));
+  var box = document.createElement('div');
+  box.className = 'cards';
+  box.style.marginTop = '18px';
+  box.innerHTML =
+    '<div class="card"><div class="k">DPS 最高</div><div class="v">' +
+    rows.reduce(function (a, b) { return a.dps > b.dps ? a : b; }).w.name + '</div>' +
+    '<div class="s">' + Math.round(maxDps) + ' DPS</div>' +
+    '<div class="bar"><i style="width:100%"></i></div></div>' +
+    '<div class="card"><div class="k">DPS 最低</div><div class="v">' +
+    rows.reduce(function (a, b) { return a.dps < b.dps ? a : b; }).w.name + '</div>' +
+    '<div class="s">' + Math.round(minDps) + ' DPS</div>' +
+    '<div class="bar"><i style="width:' + Math.round(minDps / maxDps * 100) + '%"></i></div></div>' +
+    '<div class="card"><div class="k">最快击杀</div><div class="v">' +
+    rows.reduce(function (a, b) { return a.ttk < b.ttk ? a : b; }).w.name + '</div>' +
+    '<div class="s">' + rows.reduce(function (a, b) { return a.ttk < b.ttk ? a : b; }).ttk.toFixed(2) + ' 秒</div></div>' +
+    '<div class="card"><div class="k">最慢击杀</div><div class="v">' +
+    rows.reduce(function (a, b) { return a.ttk > b.ttk ? a : b; }).w.name + '</div>' +
+    '<div class="s">' + rows.reduce(function (a, b) { return a.ttk > b.ttk ? a : b; }).ttk.toFixed(2) + ' 秒</div></div>';
+  viewEl.appendChild(box);
+
+  var note = document.createElement('p');
+  note.className = 'tip';
+  note.textContent = 'DPS = 单发总伤害 × 射速 / 60；击杀需 = ⌈最大生命 / 单发总伤害⌉；TTK 不含换弹与瞄准时间。';
+  viewEl.appendChild(note);
+  viewEl.appendChild(footerEl());
+
+  refreshDerived();
+
+  function refreshDerived() {
+    var hp2 = (val('cfg', 'unitHp') !== undefined ? val('cfg', 'unitHp') : EW.CFG.unitHp);
+    rows.forEach(function (r) {
+      var perShot = r.get('dmg') * (r.get('pellets') || 1);
+      var shots = Math.max(1, Math.ceil(hp2 / perShot));
+      var ttk = (shots - 1) * 60 / r.get('rpm');
+      var dps = perShot * r.get('rpm') / 60;
+      setText('[data-dps="' + r.k + '"]', Math.round(dps), dps >= 200 ? 'var(--red)' : 'var(--dim)');
+      setText('[data-shots="' + r.k + '"]', shots + ' 发');
+      setText('[data-ttk="' + r.k + '"]', ttk.toFixed(2) + 's');
+    });
+  }
+  function setText(sel, txt, color) {
+    var el = viewEl.querySelector(sel);
+    if (el) { el.textContent = txt; if (color) el.style.color = color; }
+  }
+}
+
+function renderItems() {
+  var t1 = document.createElement('div');
+  t1.className = 'gtitle';
+  t1.textContent = '道具冷却';
+  viewEl.appendChild(t1);
+  var tb = document.createElement('table');
+  tb.innerHTML = '<tr><th>道具</th><th>CD</th><th>说明</th></tr>';
+  Object.keys(EW.ITEMS).forEach(function (k) {
+    var it = EW.ITEMS[k];
+    var pw = pending.items[k] || {};
+    var cur = pw.cd !== undefined ? pw.cd : it.cd;
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td><div class="lbl">' + it.name + '</div><div class="key">' + k + '</div></td>';
+    var td = document.createElement('td');
+    var inp = document.createElement('input');
+    inp.className = 'num' + (cur !== it.cd ? ' mod' : '');
+    inp.type = 'number'; inp.step = 0.5; inp.value = cur;
+    inp.oninput = function () {
+      var v = parseFloat(inp.value); if (!isFinite(v)) return;
+      if (!pending.items[k]) pending.items[k] = {};
+      if (v === it.cd) delete pending.items[k].cd; else pending.items[k].cd = v;
+      inp.classList.toggle('mod', v !== it.cd);
+      updateDirty();
+    };
+    td.appendChild(inp); tr.appendChild(td);
+    var tdDesc = document.createElement('td');
+    tdDesc.className = 'key';
+    tdDesc.textContent = it.desc || '';
+    tr.appendChild(tdDesc);
+    tb.appendChild(tr);
+  });
+  viewEl.appendChild(tb);
+
+  [['天赋', EW.TALENTS, 'talents'], ['防具', EW.ARMORS, 'armors']].forEach(function (pair) {
+    var t = document.createElement('div');
+    t.className = 'gtitle';
+    t.textContent = pair[0] + '价格';
+    viewEl.appendChild(t);
+    var table = document.createElement('table');
+    table.innerHTML = '<tr><th>名称</th><th>价格</th></tr>';
+    pair[1].forEach(function (it) {
+      var pw = (pending[pair[2]] || {})[it.k] || {};
+      var cur = pw.cost !== undefined ? pw.cost : it.cost;
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td><div class="lbl">' + it.name + '</div><div class="key">' + it.k + '</div></td>';
+      var td = document.createElement('td');
+      var inp = document.createElement('input');
+      inp.className = 'num' + (cur !== it.cost ? ' mod' : '');
+      inp.type = 'number'; inp.step = 100; inp.value = cur;
+      inp.oninput = function () {
+        var v = parseFloat(inp.value); if (!isFinite(v)) return;
+        if (!pending[pair[2]]) pending[pair[2]] = {};
+        if (!pending[pair[2]][it.k]) pending[pair[2]][it.k] = {};
+        if (v === it.cost) delete pending[pair[2]][it.k].cost; else pending[pair[2]][it.k].cost = v;
+        inp.classList.toggle('mod', v !== it.cost);
+        updateDirty();
+      };
+      td.appendChild(inp); tr.appendChild(td);
+      table.appendChild(tr);
+    });
+    viewEl.appendChild(table);
+  });
+  viewEl.appendChild(footerEl());
+}
+
+function renderMaps() {
+  var t = document.createElement('div');
+  t.className = 'gtitle';
+  t.textContent = '地图目标击杀数';
+  viewEl.appendChild(t);
+  var tb = document.createElement('table');
+  tb.innerHTML = '<tr><th>地图</th><th>目标击杀</th><th>人数</th></tr>';
+  Object.keys(EW.MAPS).forEach(function (k) {
+    var m = EW.MAPS[k];
+    if (!m) return;
+    var pw = pending.maps[k] || {};
+    var cur = pw.killTarget !== undefined ? pw.killTarget : m.killTarget;
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td><div class="lbl">' + m.name + '</div><div class="key">' + k + '</div></td>';
+    var td = document.createElement('td');
+    var inp = document.createElement('input');
+    inp.className = 'num' + (cur !== m.killTarget ? ' mod' : '');
+    inp.type = 'number'; inp.step = 5; inp.value = cur;
+    inp.oninput = function () {
+      var v = parseFloat(inp.value); if (!isFinite(v)) return;
+      if (!pending.maps[k]) pending.maps[k] = {};
+      if (v === m.killTarget) delete pending.maps[k].killTarget; else pending.maps[k].killTarget = v;
+      inp.classList.toggle('mod', v !== m.killTarget);
+      updateDirty();
+    };
+    td.appendChild(inp); tr.appendChild(td);
+    var tdN = document.createElement('td');
+    tdN.className = 'key';
+    tdN.textContent = (m.teamSize * 2) + ' 人';
+    tr.appendChild(tdN);
+    tb.appendChild(tr);
+  });
+  viewEl.appendChild(tb);
+  viewEl.appendChild(footerEl());
+}
+
+function footerEl() {
+  var f = document.createElement('footer');
+  f.innerHTML = '<span class="tip">修改后点「应用并试玩」写入本地，游戏下次打开生效（' +
+    '也可以在游戏里按 F2 临时调参）。</span><span class="grow"></span>';
+  var b1 = document.createElement('button');
+  b1.className = 'btn ghost sm';
+  b1.textContent = '复制为 JSON';
+  b1.onclick = copyJSON;
+  var b2 = document.createElement('button');
+  b2.className = 'btn sm';
+  b2.textContent = '应用并试玩';
+  b2.onclick = apply;
+  f.appendChild(b1); f.appendChild(b2);
+  return f;
+}
+
+/* ============ 操作 ============ */
+function updateDirty() {
+  var n = countModified();
+  var b = document.getElementById('dirtyBadge');
+  if (n > 0) {
+    b.style.display = '';
+    b.className = 'badge dirty';
+    b.textContent = '已修改 ' + n + ' 项';
+  } else {
+    b.style.display = 'none';
+  }
+}
+
+function toast(msg, kind) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'on' + (kind ? ' ' + kind : '');
+  clearTimeout(t._h);
+  t._h = setTimeout(function () { t.className = ''; }, 2200);
+}
+
+function cleanPending() {
+  var o = {};
+  for (var g in pending) {
+    var has = false;
+    for (var k in pending[g]) {
+      if (typeof pending[g][k] === 'object') {
+        var sub = {};
+        for (var f in pending[g][k]) {
+          if (pending[g][k][f] !== baseVal(g, k)[f]) { sub[f] = pending[g][k][f]; has = true; }
+        }
+        if (Object.keys(sub).length) { if (!o[g]) o[g] = {}; o[g][k] = sub; }
+      }
+    }
+  }
+  return o;
+}
+
+function currentJSON() {
+  var src = cleanPending();
+  var out = {};
+  for (var g in src) {
+    if (typeof src[g] !== 'object') continue;
+    out[g] = {};
+    for (var k in src[g]) {
+      if (g === 'cfg') out.cfg[k] = src.cfg[k];
+      else out[g][k] = src[g][k];
+    }
+  }
+  // cfg 是扁平结构
+  if (src.cfg) out.cfg = src.cfg;
+  return out;
+}
+
+function apply() {
+  var data = currentJSON();
+  try {
+    localStorage.setItem(STORE, JSON.stringify(data));
+    toast('已应用到本地，正在打开游戏…', 'ok');
+    setTimeout(function () { window.open('index.html', '_blank'); }, 500);
+  } catch (e) {
+    toast('写入失败：' + e.message, 'err');
+  }
+}
+
+function copyJSON() {
+  var txt = JSON.stringify(currentJSON(), null, 2);
+  navigator.clipboard.writeText(txt).then(function () {
+    toast('已复制到剪贴板', 'ok');
+  }).catch(function () {
+    var ta = document.createElement('textarea');
+    ta.value = txt; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); ta.remove();
+    toast('已复制', 'ok');
+  });
+}
+
+function exportJSON() {
+  var txt = JSON.stringify(currentJSON(), null, 2);
+  var blob = new Blob([txt], { type: 'application/json' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'elementswar-balance.json';
+  a.click();
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  toast('已导出 elementswar-balance.json', 'ok');
+}
+
+function importJSON() {
+  var inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = '.json,application/json';
+  inp.onchange = function () {
+    var f = inp.files[0];
+    if (!f) return;
+    var r = new FileReader();
+    r.onload = function () {
+      try {
+        var data = JSON.parse(r.result);
+        pending = ensureShapes(data);
+        render(); renderNav(); updateDirty();
+        toast('已导入，记得点「应用并试玩」', 'ok');
+      } catch (e) {
+        toast('JSON 解析失败：' + e.message, 'err');
+      }
+    };
+    r.readAsText(f);
+  };
+  inp.click();
+}
+
+document.getElementById('btnApply').onclick = apply;
+document.getElementById('btnExport').onclick = exportJSON;
+document.getElementById('btnImport').onclick = importJSON;
+document.getElementById('btnResetAll').onclick = function () {
+  if (!confirm('恢复所有参数的出厂值？')) return;
+  pending = ensureShapes({});
+  try { localStorage.removeItem(STORE); } catch (e) { }
+  render(); updateDirty();
+  toast('已恢复出厂值', 'ok');
+};
+document.getElementById('search').oninput = function (e) {
+  keyword = e.target.value.trim().toLowerCase();
+  render();
+};
+
+document.getElementById('ver').textContent = 'v' + EW.VERSION;
+if (location.hash) {
+  var g0 = decodeURIComponent(location.hash.slice(1));
+  if (groups().indexOf(g0) >= 0) currentGroup = g0;
+}
+renderNav();
+render();
+updateDirty();
+</script>
+</body>
+</html>
